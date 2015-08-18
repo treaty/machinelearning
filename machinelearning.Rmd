@@ -1,0 +1,59 @@
+---
+title: "Practical Machine Learning Course Project"
+output: html_document
+---
+
+**1. Introduction**
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, the goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to predict the manner in which they did the exercise.
+
+**2. Getting and Cleaning Data**
+
+First read the data 
+
+```{r}
+train<-read.csv("pml-training.csv")
+test<-read.csv("pml-testing.csv")
+```
+
+Remove the columns that are incompleted or less variable in the training data set and remove the identification column, which is the first column. These columns should also be removed from the testing data set. Then, the training data set is further divided into the actual training data set and validation data set. 
+
+```{r}
+library(caret)
+library(randomForest)
+set.seed(87428)
+train2<- train[,colSums(is.na(train)) == 0 ]
+vardata<- nearZeroVar(train2,saveMetrics = TRUE)
+nearzv<-vardata$nzv
+train3<-train2[,!nearzv]
+traindata<- train3[c(-1)]
+train4<- train3[c(-1,-59)]
+selecol<-colnames(train4)
+testdata<- test[,selecol]
+intrain <- createDataPartition(traindata$classe,p=0.7,list=F)
+actrain<- traindata[intrain,]
+acvalid<- traindata[-intrain,]
+```
+
+**3. Building Model**
+
+```{r}
+trcontrol <- trainControl(method="cv",5)
+model<- train(classe ~ ., data=actrain,method="rf",trControl=trcontrol,ntree=100)
+model
+predictval<- predict(model,acvalid)
+confusionMatrix(acvalid$classe,predictval)
+```
+
+so the accuracy of the model is 0.9993 and the estimated out of sample error is 0.0007 
+
+**4. Final Test**
+
+```{r}
+predicttest<- predict(model,testdata)
+predicttest
+```
+
+
+
+
